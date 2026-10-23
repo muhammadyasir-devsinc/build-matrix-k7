@@ -113,8 +113,9 @@ jobs:
             # infra/exception markers in harbor output, or a missing reward = not a counted run
             # infra/no-op markers: harbor-level exceptions OR agent-side api/auth errors (empty key,
             # dropped connection, refusal, 0 turns) that grade 0.0 without real work -> NOT a model fail.
-            agent_noop=$(grep -qrsE '"terminal_reason":"api_error"|authentication_failed|Not logged in|Please run /login|API Error: Connection|"num_turns":0[,}]' "/tmp/jobs/$jn" 2>/dev/null && echo yes)
-            if grep -qiE "UnknownApiError|AgentTimeoutError|EnvironmentStartTimeout|NonZeroAgentExitCode|ApiError|overloaded|Exceptions +. +[1-9]" "/tmp/$jn.log" || [ -n "$agent_noop" ] || [ -z "$rw" ]; then
+            agent_noop=no
+            if grep -qrsE '"terminal_reason":"api_error"|authentication_failed|Not logged in|Please run /login|API Error: Connection|"num_turns":0[,}]' "/tmp/jobs/$jn" 2>/dev/null; then agent_noop=yes; fi
+            if grep -qiE "UnknownApiError|AgentTimeoutError|EnvironmentStartTimeout|NonZeroAgentExitCode|ApiError|overloaded|Exceptions +. +[1-9]" "/tmp/$jn.log" || [ "$agent_noop" = yes ] || [ -z "$rw" ]; then
               infra=$((infra+1)); echo "INFRA $ID $MODEL a$attempt (not counted): $(grep -ohiE "UnknownApiError|AgentTimeoutError|authentication_failed|Not logged in|API Error: Connection|api_error" "/tmp/$jn.log" "/tmp/jobs/$jn"/*/*/agent/* 2>/dev/null | head -1)${rw:+ reward=$rw}"
               sleep $((20*infra)); continue
             fi
